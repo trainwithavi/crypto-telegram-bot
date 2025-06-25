@@ -118,6 +118,18 @@ async def randompick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = "\n".join(picks)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🎲 *Random Coin Picks*\n\n{msg}", parse_mode="Markdown")
 
+# 🔹 HOT COINS (24h movers with volume > $10M and % change > 5%)
+async def hotcoins(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    coins = fetch_market_data()
+    if not coins:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="🚫 Data fetch failed.")
+        return
+    hot = [f"{c['name']} ({c['symbol'].upper()}): {c['price_change_percentage_24h']:.2f}% ↑"
+           for c in coins if c.get("total_volume", 0) > 10_000_000 and c.get("price_change_percentage_24h", 0) > 5]
+    msg = "\n".join(hot[:10]) or "🚫 No hot coins found."
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🚀 *Hot Coins (24h)* 🔥\n\n{msg}", parse_mode="Markdown")
+
+
 # 🧠 Application setup
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 app.add_handler(CommandHandler("top5", top5))
@@ -125,6 +137,8 @@ app.add_handler(CommandHandler("overbought", overbought))
 app.add_handler(CommandHandler("oversold", oversold))
 app.add_handler(CommandHandler("whales", whales))
 app.add_handler(CommandHandler("random", randompick))
+app.add_handler(CommandHandler("hotcoins", hotcoins))
+
 
 print("✅ Bot is live — use /top5, /overbought, /oversold, /whales, /random")
 app.run_polling()
